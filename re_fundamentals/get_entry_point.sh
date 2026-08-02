@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Parameter validation
+# Check parameter
 if [ "$#" -ne 1 ]; then
     echo "Usage: $0 <elf_file>" >&2
     exit 1
@@ -8,7 +8,7 @@ fi
 
 file_name="$1"
 
-# Check if file exists
+# Check file existence
 if [ ! -f "$file_name" ]; then
     echo "Error: File '$file_name' does not exist." >&2
     exit 1
@@ -19,7 +19,7 @@ if [ -f "./messages.sh" ]; then
     source ./messages.sh
 fi
 
-# Retrieve header info
+# Get header info
 header_info=$(readelf -h "$file_name" 2>/dev/null)
 
 if [ -z "$header_info" ]; then
@@ -27,17 +27,16 @@ if [ -z "$header_info" ]; then
     exit 1
 fi
 
-# Extract individual fields clean of apostrophe syntax issues
-magic_number=$(echo "$header_info" | grep "Magic:" | sed -n 's/^[[:space:]]*Magic:[[:space:]]*//p')
+# Extract and trim fields cleanly
+magic_number=$(echo "$header_info" | grep "Magic:" | sed 's/^[[:space:]]*Magic:[[:space:]]*//' | sed 's/[[:space:]]*$//')
 
-class=$(echo "$header_info" | grep "Class:" | sed -n 's/^[[:space:]]*Class:[[:space:]]*//p')
+class=$(echo "$header_info" | grep "Class:" | sed 's/^[[:space:]]*Class:[[:space:]]*//' | sed 's/[[:space:]]*$//')
 
-# Extract "little endian" or "big endian" correctly from the "Data:" line
-byte_order=$(echo "$header_info" | grep "Data:" | sed -n 's/.*,\s*\(.*endian\).*/\1/p')
+byte_order=$(echo "$header_info" | grep "Data:" | sed -n 's/.*,\s*\(.*endian\).*/\1/p' | sed 's/[[:space:]]*$//')
 
-entry_point_address=$(echo "$header_info" | grep "Entry point address:" | sed -n 's/^[[:space:]]*Entry point address:[[:space:]]*//p')
+entry_point_address=$(echo "$header_info" | grep "Entry point address:" | sed 's/^[[:space:]]*Entry point address:[[:space:]]*//' | sed 's/[[:space:]]*$//')
 
-# Call function from messages.sh
+# Call display function from messages.sh
 if declare -f display_elf_header_info > /dev/null; then
     display_elf_header_info
 fi
