@@ -1,5 +1,6 @@
 #!/bin/bash
-# Check if a file argument was provided
+
+# Parameter validation
 if [ "$#" -ne 1 ]; then
     echo "Usage: $0 <elf_file>" >&2
     exit 1
@@ -7,40 +8,36 @@ fi
 
 file_name="$1"
 
-# Check if the file exists
+# Check if file exists
 if [ ! -f "$file_name" ]; then
     echo "Error: File '$file_name' does not exist." >&2
     exit 1
 fi
 
-# Source messages.sh if present in the current directory
+# Source messages.sh if present
 if [ -f "./messages.sh" ]; then
     source ./messages.sh
 fi
 
-# Retrieve raw header data using readelf
+# Retrieve header info
 header_info=$(readelf -h "$file_name" 2>/dev/null)
 
-# Verify if readelf output is valid ELF header information
 if [ -z "$header_info" ]; then
     echo "Error: '$file_name' is not a valid ELF file." >&2
     exit 1
 fi
 
-# Extract individual fields
-magic_number=$(echo "$header_info" | grep "Magic:" | sed 's/^[[:space:]]*Magic:[[:space:]]*//')
-class=$(echo "$header_info" | grep "Class:" | awk -F':' '{print $2}' | xargs)
-byte_order=$(echo "$header_info" | grep "Data:" | awk -F':' '{print $2}' | xargs)
-entry_point_address=$(echo "$header_info" | grep "Entry point address:" | awk -F':' '{print $2}' | xargs)
+# Extract individual fields clean of apostrophe syntax issues
+magic_number=$(echo "$header_info" | grep "Magic:" | sed -n 's/^[[:space:]]*Magic:[[:space:]]*//p')
 
-# If display_elf_header_info exists from messages.sh, call it; otherwise fallback format
+class=$(echo "$header_info" | grep "Class:" | sed -n 's/^[[:space:]]*Class:[[:space:]]*//p')
+
+# Extract "little endian" or "big endian" correctly from the "Data:" line
+byte_order=$(echo "$header_info" | grep "Data:" | sed -n 's/.*,\s*\(.*endian\).*/\1/p')
+
+entry_point_address=$(echo "$header_info" | grep "Entry point address:" | sed -n 's/^[[:space:]]*Entry point address:[[:space:]]*//p')
+
+# Call function from messages.sh
 if declare -f display_elf_header_info > /dev/null; then
     display_elf_header_info
-else
-    echo "Header Information for '$file_name':"
-    echo "--------------------------------"
-    echo "Magic Number: $magic_number"
-    echo "Class: $class"
-    echo "Byte Order: $byte_order"
-    echo "Entry Point Address: $entry_point_address"
 fi
